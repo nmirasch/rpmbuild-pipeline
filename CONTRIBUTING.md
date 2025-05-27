@@ -1,6 +1,6 @@
 # Contribution Guidelines
 
-The **RPM Build Pipeline** is open source → see our [LICENSE](LICENSE).
+The **RPM Build Pipeline** is open source → see the [license](COPYING).
 **Contributions are welcome!**
 
 This project hosts the [upstream][upstream] version of the pipeline.  Be aware
