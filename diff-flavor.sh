@@ -1,11 +1,29 @@
 #! /bin/bash
 
+codedir=$(dirname "$(readlink -f "$0")")
+other_flavors=$codedir/.other-flavors.sh
+
 diff_flavor=$1
-test -z "$diff_flavor" && {
-    echo "Missing argument, execute either of those:"
-    echo "  $0 fedora"
-    exit 1
-}
+
+flavors+=( "fedora" )
+fedora_raw_link=https://gitlab.com/fedora/infrastructure/konflux/rpmbuild-pipeline/-/raw/main
+fedora_overrides=( "pipeline/build-rhel-package.yaml pipeline/build-rpm-package.yaml" )
+
+test -f "$other_flavors" && source "$other_flavors"
+
+case " ${flavors[*]} " in
+    *" $diff_flavor "*)
+        eval raw_link=\$$diff_flavor\_raw_link
+        eval "overrides=( \"\${${diff_flavor}_overrides[@]}\" )"
+        ;;
+    *)
+        echo "Missing argument, execute either of those:"
+        for flavor in ${flavors[@]}; do
+            echo "  $0 $flavor"
+        done
+        exit 1
+        ;;
+esac
 
 set -x
 
@@ -21,13 +39,6 @@ task/rpmbuild.yaml
 renovate.json
 diff-flavor.sh
 "
-
-case $diff_flavor in
-fedora)
-    overrides=( "pipeline/build-rhel-package.yaml pipeline/build-rpm-package.yaml" )
-    raw_link=https://gitlab.com/fedora/infrastructure/konflux/rpmbuild-pipeline/-/raw/main
-    ;;
-esac
 
 for file in $files_to_diff; do
     url=$raw_link/$file
