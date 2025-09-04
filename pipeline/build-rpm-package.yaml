@@ -231,17 +231,25 @@ spec:
         value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: script-content
         value: $(params.pre-build-script-content)
+      - name: ociStorage
+        value: $(params.ociStorage)
       taskSpec:
         params:
         - name: script-environment-image
         - name: source-artifact
         - name: script-content
+        - name: ociStorage
         results:
         - name: manipulated-source-artifact
           description: The source artifact after manipulations.
         steps:
         - name: run-pre-build-script
           image: $(params.script-environment-image)
+          env:
+            - name: SOURCE_ARTIFACT_URL
+              value: $(params.source-artifact)
+            - name: OCI_STORAGE_URL
+              value: $(params.ociStorage)
           script: $(params.script-content)
     - name: get-rpm-sources
       retries: 3
