@@ -651,5 +651,6 @@ spec:
           - name: pathInRepo
             value: task/check-noarch.yaml
   workspaces:
-    - name: git-auth
-      optional: true
+  - name: source-workspace
+  - name: git-auth
+    optional: true
