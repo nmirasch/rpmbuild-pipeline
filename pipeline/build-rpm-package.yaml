@@ -177,7 +177,7 @@ spec:
       - name: name
         value: git-clone
       - name: bundle
-        value: quay.io/redhat-appstudio/build-templates-bundle:latest
+        value: quay.io/redhat-appstudio/build-templates-bundle:82245cd27301293a525c345b10e53a5c2d1b7083
       - name: kind
         value: task
     runAfter:
