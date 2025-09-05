@@ -15,7 +15,7 @@ spec:
         - name: pipelinerun-name
           value: $(context.pipelineRun.name)
         - name: git-url
-          value: $(tasks.git-clone-to-workspace.results.url)?rev=$(tasks.git-clone-to-workspace.results.commit)
+          value: $(tasks.clone-repository.results.url)?rev=$(tasks.clone-repository.results.commit)
         - name: image-url
           value: $(tasks.upload-to-quay.results.IMAGE_URL)
       taskRef:
@@ -123,7 +123,8 @@ spec:
         #!/usr/bin/env bash
         set -euxo pipefail
         echo "No pre-build script provided. Skipping."
-        echo -n "${SOURCE_ARTIFACT_URL}" | tee $(results.manipulated-source-artifact.path)
+        # This script must output the artifact path to the result file.
+        echo -n "$(params.source-artifact)" | tee $(results.manipulated-source-artifact.path)
     - name: post-build-script-content
       description: The shell script to execute after all RPMs have been built.
       type: string
@@ -140,10 +141,10 @@ spec:
   results:
     - description: ""
       name: CHAINS-GIT_URL
-      value: $(tasks.git-clone-to-workspace.results.url)
+      value: $(tasks.clone-repository.results.url)
     - description: ""
       name: CHAINS-GIT_COMMIT
-      value: $(tasks.git-clone-to-workspace.results.commit)
+      value: $(tasks.clone-repository.results.commit)
     - description: ""
       name: IMAGE_URL
       value: $(tasks.upload-to-quay.results.IMAGE_URL)
@@ -164,93 +165,70 @@ spec:
       retries: 3
       taskSpec:
         results:
-        - name: timestamp
-          description: Timestamp for pipeline start
+          - name: timestamp
+            description: Timestamp for pipeline start
         steps:
-        - name: store-timestamp
-          image: registry.access.redhat.com/ubi9
-          script: |
-            #!/usr/bin/env bash
-            set -e
-            date "+%s" | tr -d '\n' | tee $(results.timestamp.path)
+          - name: store-timestamp
+            image: registry.access.redhat.com/ubi9
+            script: |
+              #!/usr/bin/env bash
+              set -e
+              date "+%s" | tr -d '\n' | tee $(results.timestamp.path)
     - name: init
       retries: 3
       params:
-      - name: rebuild
-        value: $(params.rebuild)
-      - name: skip-checks
-        value: $(params.skip-checks)
-      - name: image-url
-        value: todo - drop
+        - name: rebuild
+          value: $(params.rebuild)
+        - name: skip-checks
+          value: $(params.skip-checks)
+        - name: image-url
+          value: todo - drop
       runAfter:
-      - store-start-time
+        - store-start-time
       taskRef:
         params:
-        - name: name
-          value: init
-        - name: bundle
-          value: quay.io/redhat-appstudio-tekton-catalog/task-init:0.2@sha256:ebfb603b73c2e1500fa1d2c757a585bc2da5043afe0798abdf61466e26fd2b0c
-        - name: kind
-          value: task
+          - name: name
+            value: init
+          - name: bundle
+            value: quay.io/redhat-appstudio-tekton-catalog/task-init:0.2@sha256:ebfb603b73c2e1500fa1d2c757a585bc2da5043afe0798abdf61466e26fd2b0c
+          - name: kind
+            value: task
         resolver: bundles
-    - name: git-clone-to-workspace
+    - name: clone-repository
       retries: 3
-      taskRef:
-        name: git-clone
-        bundle: quay.io/redhat-appstudio/build-templates-bundle:latest
-      runAfter:
-      - init
       params:
-      - name: url
-        value: $(params.git-url)
-      - name: revision
-        value: $(params.revision)
-      workspaces:
-      - name: output
-        workspace: source-workspace
-      - name: basic-auth
-        workspace: git-auth
-    - name: package-source-as-oci
-      retries: 3
-      runAfter:
-      - git-clone-to-workspace
-      params:
-      - name: ociStorage
-        value: $(params.ociStorage)
-      taskSpec:
-        params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.revision)
+        - name: depth
+          value: 0
         - name: ociStorage
-        workspaces:
-        - name: source
-        results:
-        - name: SOURCE_ARTIFACT
-        steps:
-        - name: push-source
-          image: quay.io/skopeo/stable:latest
-          env:
-          - name: OCI_STORAGE_URL
-            value: $(params.ociStorage)
-          script: |
-            #!/usr/bin/env bash
-            set -euxo pipefail
-            SOURCE_DIR=$(workspaces.source.path)
-            DESTINATION_URL="${OCI_STORAGE_URL}.git:source-$(date +%s)"
-            skopeo copy "dir:${SOURCE_DIR}" "docker://${DESTINATION_URL}" --digestfile digest.txt
-            REPO_URL=$(echo "${DESTINATION_URL}" | cut -d: -f1)
-            NEW_DIGEST=$(cat digest.txt)
-            NEW_ARTIFACT_WITH_DIGEST="${REPO_URL}@${NEW_DIGEST}"
-            echo -n "${NEW_ARTIFACT_WITH_DIGEST}" | tee $(results.SOURCE_ARTIFACT.path)
+          value: $(params.ociStorage).git
+        - name: ociArtifactExpiresAfter
+          value: 14d
+      runAfter:
+        - init
+      taskRef:
+        params:
+          - name: name
+            value: git-clone-oci-ta
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.1@sha256:4a601aeec58a1dd89c271e728fd8f0d84777825b46940c3aec27f15bab3edacf
+          - name: kind
+            value: task
+        resolver: bundles
       workspaces:
-      - name: source
-        workspace: source-workspace
+        - name: basic-auth
+          workspace: git-auth
     - name: pre-build-script
       runAfter:
-      - package-source-as-oci
+      - clone-repository
       params:
       - name: script-environment-image
         value: $(params.script-environment-image)
       - name: source-artifact
-        value: $(tasks.package-source-as-oci.results.SOURCE_ARTIFACT)
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: script-content
         value: $(params.pre-build-script-content)
       - name: ociStorage
@@ -651,6 +629,5 @@ spec:
           - name: pathInRepo
             value: task/check-noarch.yaml
   workspaces:
-  - name: source-workspace
-  - name: git-auth
-    optional: true
+    - name: git-auth
+      optional: true
