@@ -139,26 +139,19 @@ spec:
       type: string
       default: ""
   results:
-    - description: ""
-      name: CHAINS-GIT_URL
-      value: $(tasks.clone-repository.results.url)
-    - description: ""
-      name: CHAINS-GIT_COMMIT
-      value: $(tasks.clone-repository.results.commit)
-    - description: ""
-      name: IMAGE_URL
+    - name: CHAINS-GIT_URL
+      value: $(tasks.git-clone-to-workspace.results.url)
+    - name: CHAINS-GIT_COMMIT
+      value: $(tasks.git-clone-to-workspace.results.commit)
+    - name: IMAGE_URL
       value: $(tasks.upload-to-quay.results.IMAGE_URL)
-    - description: ""
-      name: IMAGE_DIGEST
+    - name: IMAGE_DIGEST
       value: $(tasks.upload-to-quay.results.IMAGE_DIGEST)
     - name: SBOM_BLOB_URL
-      description: SPDX SBOM
       value: $(tasks.upload-to-quay.results.SBOM_BLOB_URL)
-    - description: ""
-      name: PULP-IMAGE_URL
+    - name: PULP-IMAGE_URL
       value: $(tasks.upload-to-quay.results.PULP-IMAGE_URL)
-    - description: ""
-      name: PULP-IMAGE_DIGEST
+    - name: PULP-IMAGE_DIGEST
       value: $(tasks.upload-to-quay.results.PULP-IMAGE_DIGEST)
   tasks:
     - name: store-start-time
@@ -194,41 +187,64 @@ spec:
           - name: kind
             value: task
         resolver: bundles
-    - name: clone-repository
+    - name: git-clone-to-workspace
       retries: 3
+      taskRef:
+        name: git-clone
+        bundle: quay.io/redhat-appstudio/build-templates-bundle:latest
+      runAfter:
+      - init
       params:
         - name: url
           value: $(params.git-url)
         - name: revision
           value: $(params.revision)
-        - name: depth
-          value: 0
-        - name: ociStorage
-          value: $(params.ociStorage).git
-        - name: ociArtifactExpiresAfter
-          value: 14d
-      runAfter:
-        - init
-      taskRef:
-        params:
-          - name: name
-            value: git-clone-oci-ta
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.1@sha256:4a601aeec58a1dd89c271e728fd8f0d84777825b46940c3aec27f15bab3edacf
-          - name: kind
-            value: task
-        resolver: bundles
       workspaces:
+        - name: output
+          workspace: source-workspace
         - name: basic-auth
           workspace: git-auth
+    - name: package-source-as-oci
+      retries: 3
+      runAfter:
+      - git-clone-to-workspace
+      params:
+      - name: ociStorage
+        value: $(params.ociStorage)
+      taskSpec:
+        params:
+        - name: ociStorage
+        workspaces:
+        - name: source
+        results:
+        - name: SOURCE_ARTIFACT
+        steps:
+        - name: push-source
+          image: quay.io/skopeo/stable:latest
+          env:
+          - name: OCI_STORAGE_URL
+            value: $(params.ociStorage)
+          script: |
+            #!/usr/bin/env bash
+            set -euxo pipefail
+            SOURCE_DIR=$(workspaces.source.path)
+            DESTINATION_URL="${OCI_STORAGE_URL}.git:source-$(date +%s)"
+            skopeo copy "dir:${SOURCE_DIR}" "docker://${DESTINATION_URL}" --digestfile digest.txt
+            REPO_URL=$(echo "${DESTINATION_URL}" | cut -d: -f1)
+            NEW_DIGEST=$(cat digest.txt)
+            NEW_ARTIFACT_WITH_DIGEST="${REPO_URL}@${NEW_DIGEST}"
+            echo -n "${NEW_ARTIFACT_WITH_DIGEST}" | tee $(results.SOURCE_ARTIFACT.path)
+      workspaces:
+      - name: source
+        workspace: source-workspace
     - name: pre-build-script
       runAfter:
-      - clone-repository
+      - package-source-as-oci
       params:
       - name: script-environment-image
         value: $(params.script-environment-image)
       - name: source-artifact
-        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+        value: $(tasks.package-source-as-oci.results.SOURCE_ARTIFACT)
       - name: script-content
         value: $(params.pre-build-script-content)
       - name: ociStorage
@@ -241,15 +257,14 @@ spec:
         - name: ociStorage
         results:
         - name: manipulated-source-artifact
-          description: The source artifact after manipulations.
         steps:
         - name: run-pre-build-script
           image: $(params.script-environment-image)
           env:
-            - name: SOURCE_ARTIFACT_URL
-              value: $(params.source-artifact)
-            - name: OCI_STORAGE_URL
-              value: $(params.ociStorage)
+          - name: SOURCE_ARTIFACT_URL
+            value: $(params.source-artifact)
+          - name: OCI_STORAGE_URL
+            value: $(params.ociStorage)
           script: $(params.script-content)
     - name: get-rpm-sources
       retries: 3
@@ -629,5 +644,6 @@ spec:
           - name: pathInRepo
             value: task/check-noarch.yaml
   workspaces:
+    - name: source-workspace
     - name: git-auth
       optional: true
