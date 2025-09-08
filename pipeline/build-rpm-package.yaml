@@ -117,7 +117,6 @@ spec:
     # default Tekton Task timeout).
     - name: pre-build-script-image
       type: string
-      default: ""
     - name: pre-build-script-content
       description: The shell script to execute before the RPM sources are processed.
       type: string

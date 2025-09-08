@@ -22,6 +22,7 @@ spec:
     - name: script-environment-image
       type: string
       description: OCI image with tools for the custom script.
+      default: registry.access.redhat.com/ubi9/ubi-minimal:latest
     - name: script-content
       type: string
       description: Optional bash script to execute on the source files.
@@ -41,7 +42,7 @@ spec:
     - use
     - $(params.source-artifact)=source
   - name: run-script-if-present
-    image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+    image: $(script-environment-image)
     workingDir: $(workspaces.workdir.path)/source
     script: |
       #!/usr/bin/env bash
