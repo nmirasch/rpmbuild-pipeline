@@ -326,10 +326,10 @@ spec:
         value: $(params.script-environment-image)
       - name: dependencies-artifact
         value: $(tasks.get-rpm-sources.results.dependencies-artifact)
-        - name: ociStorage
-          value: $(params.ociStorage).calculation-x86_64
-        - name: ociArtifactExpiresAfter
-          value: 14d
+      - name: ociStorage
+        value: $(params.ociStorage).calculation-x86_64
+      - name: ociArtifactExpiresAfter
+        value: 14d
       taskRef:
         resolver: git
         params:
