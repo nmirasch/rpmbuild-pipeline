@@ -259,7 +259,7 @@ spec:
         - name: hermetic
           value: $(params.hermetic)
         - name: build-architectures
-          value: $(params.build-architectures)
+          value: $(params.build-architectures[*])
       taskRef:
         resolver: git
         params:
