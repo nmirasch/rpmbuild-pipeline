@@ -230,7 +230,7 @@ spec:
             value: task/pre-build-script.yaml
       params:
         - name: source-artifact
-          value: $(tasks.clone-repository.results.source-artifact)
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
         - name: ociStorage
           value: $(params.ociStorage)
         - name: ociArtifactExpiresAfter
@@ -238,7 +238,7 @@ spec:
         - name: script-environment-image
           value: $(params.pre-build-script-image)
         - name: script-content
-          value: $(params.pre-build-script-content)
+          value: ["$(params.build-architectures[*])"]
       workspaces:
         - name: workdir
           workspace: workdir
@@ -259,7 +259,7 @@ spec:
         - name: hermetic
           value: $(params.hermetic)
         - name: build-architectures
-          value: $(params.build-architectures[*])
+          value: ["$(params.build-architectures[*])"]
       taskRef:
         resolver: git
         params:
