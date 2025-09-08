@@ -238,7 +238,7 @@ spec:
         - name: script-environment-image
           value: $(params.pre-build-script-image)
         - name: script-content
-          value: ["$(params.build-architectures[*])"]
+          value: $(params.pre-build-script-content)
       workspaces:
         - name: workdir
           workspace: workdir
