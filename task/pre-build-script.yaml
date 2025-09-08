@@ -9,6 +9,9 @@ spec:
   description: |-
     Takes a source artifact and runs an optional custom script to modify its contents.
     It always outputs a source artifact for the next task.
+  workspaces:
+    - name: workdir
+      description: The workspace where the source code is stored and the script runs.
   params:
     - name: source-artifact
       type: string
@@ -44,9 +47,19 @@ spec:
   - name: run-script
     image: $(params.pre-build-script-image)
     script: |
-      set -x
+      #!/usr/bin/env bash
+      set -euxo pipefail
+      
+      # Ensure we are in the right directory
       cd "/var/workdir/source"
+      
+      # Write the script content to a file to ensure proper execution
+      echo -e "$(params.pre-build-script-content)" > ./run.sh
+      chmod +x ./run.sh
+      
       echo "+++ Running pre-build script +++"
+      # Execute the script
+      ./run.sh
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
     args:
@@ -57,6 +70,3 @@ spec:
     env:
     - name: IMAGE_EXPIRES_AFTER
       value: $(params.ociArtifactExpiresAfter)
-  volumes:
-  - name: workdir
-    emptyDir: {}
