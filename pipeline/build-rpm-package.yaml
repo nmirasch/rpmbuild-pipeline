@@ -80,7 +80,7 @@ spec:
         Testing-only.  This must be filled as parameter in tests so we can point
         at the Tasks for the same git-revision.
       type: string
-      default: "https://github.com/konflux-ci/rpmbuild-pipeline.git"
+      default: "https://github.com/nmirasch/rpmbuild-pipeline.git"
     - name: self-ref-revision
       description: |
         Testing-only.  This must be filled as parameter in tests so we can point
@@ -218,80 +218,80 @@ spec:
           workspace: git-auth
     - name: pre-build-script
       runAfter:
-      - clone-repository
+        - clone-repository
       taskRef:
         resolver: git
         params:
-        - name: url
-          value: $(params.self-ref-url)
-        - name: revision
-          value: $(params.self-ref-revision)
-        - name: pathInRepo
-          value: task/pre-build-script.yaml
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/pre-build-script.yaml
       params:
-      - name: source-artifact
-        value: $(tasks.clone-repository.results.source-artifact)
-      - name: script-environment-image
-        value: $(params.pre-build-script-image)
-      - name: script-content
-        value: $(params.pre-build-script-content)
-      - name: ociStorage
-        value: $(params.ociStorage)
-      - name: ociArtifactExpiresAfter
-        value: $(params.ociArtifactExpiresAfter)
+        - name: source-artifact
+          value: $(tasks.clone-repository.results.source-artifact)
+        - name: script-environment-image
+          value: $(params.pre-build-script-image)
+        - name: script-content
+          value: $(params.pre-build-script-content)
+        - name: ociStorage
+          value: $(params.ociStorage)
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
       workspaces:
         - name: workdir
           workspace: workdir
     - name: get-rpm-sources
       runAfter:
-      - pre-build-script
+        - pre-build-script
       params:
-      - name: source-artifact
-        value: $(tasks.pre-build-script.results.manipulated-source-artifact)
-      - name: package-name
-        value: $(params.package-name)
-      - name: ociStorage
-        value: $(params.ociStorage)
-      - name: ociArtifactExpiresAfter
-        value: $(params.ociArtifactExpiresAfter)
-      - name: script-environment-image
-        value: $(params.script-environment-image)
-      - name: hermetic
-        value: $(params.hermetic)
-      - name: build-architectures
-        value: $(params.build-architectures)
+        - name: source-artifact
+          value: $(tasks.pre-build-script.results.manipulated-source-artifact)
+        - name: package-name
+          value: $(params.package-name)
+        - name: ociStorage
+          value: $(params.ociStorage)
+        - name: ociArtifactExpiresAfter
+          value: $(params.ociArtifactExpiresAfter)
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: hermetic
+          value: $(params.hermetic)
+        - name: build-architectures
+          value: $(params.build-architectures)
       taskRef:
         resolver: git
         params:
-        - name: url
-          value: $(params.self-ref-url)
-        - name: revision
-          value: $(params.self-ref-revision)
-        - name: pathInRepo
-          value: task/get-rpm-sources.yaml
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/get-rpm-sources.yaml
       workspaces:
-      - name: workdir
-        workspace: workdir
+        - name: workdir
+          workspace: workdir
     - name: calculate-deps-x86-64
       runAfter:
-      - get-rpm-sources
+        - get-rpm-sources
       params:
-      - name: package-name
-        value: $(params.package-name)
-      - name: target-branch
-        value: $(params.target-branch)
-      - name: koji-target
-        value: $(params.koji-target)
-      - name: PLATFORM
-        value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
-      - name: script-environment-image
-        value: $(params.script-environment-image)
-      - name: dependencies-artifact
-        value: $(tasks.get-rpm-sources.results.dependencies-artifact)
-      - name: ociStorage
-        value: $(params.ociStorage).calculation-x86_64
-      - name: ociArtifactExpiresAfter
-        value: 14d
+        - name: package-name
+          value: $(params.package-name)
+        - name: target-branch
+          value: $(params.target-branch)
+        - name: koji-target
+          value: $(params.koji-target)
+        - name: PLATFORM
+          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
+        - name: script-environment-image
+          value: $(params.script-environment-image)
+        - name: dependencies-artifact
+          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+        - name: ociStorage
+          value: $(params.ociStorage).calculation-x86_64
+        - name: ociArtifactExpiresAfter
+          value: 14d
       taskRef:
         resolver: git
         params:
