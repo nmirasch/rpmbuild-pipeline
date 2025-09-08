@@ -217,7 +217,8 @@ spec:
         - name: basic-auth
           workspace: git-auth
     - name: pre-build-script
-      runAfter: clone-repository
+      runAfter:
+      - clone-repository
       taskRef:
         resolver: git
         params:
