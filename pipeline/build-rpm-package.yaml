@@ -217,17 +217,7 @@ spec:
         - name: basic-auth
           workspace: git-auth
     - name: pre-build-script
-      when:
-      - input: $(params.pre-build-script-content)
-        operator: notin
-        values: [""]
-      params:
-      - name: source-artifact
-        value: $(params.source-artifact)
-      - name: script-environment-image
-        value: $(params.pre-build-script-image)
-      - name: script-content
-        value: $(params.pre-build-script-content)
+      runAfter: clone-repository
       taskRef:
         resolver: git
         params:
@@ -237,9 +227,20 @@ spec:
           value: $(params.self-ref-revision)
         - name: pathInRepo
           value: task/pre-build-script.yaml
+      params:
+      - name: source-artifact
+        value: $(tasks.clone-repository.results.source-artifact)
+      - name: script-environment-image
+        value: $(params.pre-build-script-image)
+      - name: script-content
+        value: $(params.pre-build-script-content)
+      - name: ociStorage
+        value: $(params.ociStorage)
+      - name: ociArtifactExpiresAfter
+        value: $(params.ociArtifactExpiresAfter)
       workspaces:
-      - name: workdir
-        workspace: workdir
+        - name: workdir
+          workspace: workdir
     - name: get-rpm-sources
       runAfter:
       - pre-build-script
@@ -589,5 +590,4 @@ spec:
   workspaces:
     - name: git-auth
       optional: true
-    - name: registry-auth
-      optional: true
+    - name: workdir

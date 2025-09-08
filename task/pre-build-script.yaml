@@ -7,56 +7,60 @@ metadata:
   name: pre-build-script
 spec:
   description: |
-    Takes a source artifact, extracts it, and runs a custom script
-    to modify the contents (e.g., generate a spec file, download sources).
-    It then outputs a new, manipulated source artifact.
+    Takes a source artifact and runs an optional custom script to modify its contents.
+    It always outputs a source artifact for the next task.
   params:
   - name: source-artifact
     description: The Trusted Artifact URI from the clone-repository task.
     type: string
   - name: ociStorage
-    description: The OCI repository where the new Trusted Artifact will be stored.
+    description: The OCI repository where a new Trusted Artifact will be stored.
     type: string
   - name: ociArtifactExpiresAfter
-    description: How long the new Trusted Artifact should be retained.
+    description: How long a new Trusted Artifact should be retained.
     type: string
   - name: script-environment-image
     description: OCI image with tools (skopeo, jq, etc.) needed by the custom script.
     type: string
   - name: script-content
-    description: The bash script to execute on the source files.
+    description: The optional bash script to execute on the source files.
     type: string
-  - name: context
-    description: The sub-directory within the source to run the script from.
-    type: string
-    default: "."
+    default: ""
   results:
   - name: manipulated-source-artifact
-    description: The Trusted Artifact URI pointing to the modified source.
+    description: The Trusted Artifact URI pointing to the source for the next step.
     type: string
   workspaces:
   - name: workdir
     description: A workspace for all the operations.
   steps:
+  - name: check-for-script-and-pass-through-if-empty
+    image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+    script: |
+      #!/usr/bin/env bash
+      set -e
+      if [[ -z "$(params.script-content)" ]]; then
+        echo "No pre-build script provided. Passing original source artifact through."
+        echo -n "$(params.source-artifact)" | tee "$(results.manipulated-source-artifact.path)"
+        exit 0
+      else
+        echo "Pre-build script provided. Proceeding with modification."
+      fi
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
     workingDir: $(workspaces.workdir.path)
     args:
     - use
     - $(params.source-artifact)=source
-  
   - name: run-script
     image: $(params.script-environment-image)
-    workingDir: $(workspaces.workdir.path)/source/$(params.context)
+    workingDir: $(workspaces.workdir.path)/source
     script: |
       #!/usr/bin/env bash
       set -euxo pipefail
       echo "--- Running custom pre-build script ---"
-      
       $(params.script-content)
-      
       echo "--- Custom pre-build script finished successfully ---"
-  
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
     workingDir: $(workspaces.workdir.path)
