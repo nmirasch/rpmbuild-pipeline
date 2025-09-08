@@ -6,7 +6,7 @@ metadata:
     tekton.dev/tags: rpm-build
   name: pre-build-script
 spec:
-  description: |
+  description: |-
     Takes a source artifact and runs an optional custom script to modify its contents.
     It always outputs a source artifact for the next task.
   params:
@@ -19,33 +19,44 @@ spec:
     - name: ociArtifactExpiresAfter
       type: string
       description: Retention period for the new Trusted Artifact.
-    - name: script-environment-image
+    - name: pre-build-script-image
       type: string
       description: OCI image with tools for the custom script.
       default: registry.access.redhat.com/ubi9/ubi-minimal:latest
-    - name: script-content
+    - name: pre-build-script-content
       type: string
       description: Optional bash script to execute on the source files.
       default: ""
   results:
-  - name: manipulated-source-artifact
-    description: The Trusted Artifact URI pointing to the source for the next step.
-    type: string
-  workspaces:
-  - name: workdir
-    description: A workspace for all the operations.
+    - name: manipulated-source-artifact
+      description: The Trusted Artifact URI pointing to the source for the next step.
+      type: string
+  stepTemplate:
+    volumeMounts:
+    - mountPath: /var/workdir
+      name: workdir
   steps:
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-    workingDir: $(workspaces.workdir.path)
     args:
     - use
-    - $(params.source-artifact)=source
+    - $(params.source-artifact)=/var/workdir/source
+  - name: run-script
+    image: $(params.pre-build-script-image)
+    script: |
+      set -x
+      cd "/var/workdir/source"
+      echo "+++ Running pre-build script +++"
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-    workingDir: $(workspaces.workdir.path)
     args:
     - create
-    - source=$(params.ociStorage):pre-build-$(context.taskRun.uid)
-    - --expires-after=$(params.ociArtifactExpiresAfter)
-    - --results-file=$(results.manipulated-source-artifact.path)
+    - --store
+    - $(params.ociStorage)
+    - $(results.manipulated-source-artifact)=/var/workdir/source
+    env:
+    - name: IMAGE_EXPIRES_AFTER
+      value: $(params.ociArtifactExpiresAfter)
+  volumes:
+  - name: workdir
+    emptyDir: {}

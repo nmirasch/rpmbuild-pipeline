@@ -234,9 +234,9 @@ spec:
           value: $(params.ociStorage)
         - name: ociArtifactExpiresAfter
           value: 14d
-        - name: script-environment-image
+        - name: pre-build-script-image
           value: $(params.pre-build-script-image)
-        - name: script-content
+        - name: pre-build-script-content
           value: $(params.pre-build-script-content)
       workspaces:
         - name: workdir
