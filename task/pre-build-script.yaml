@@ -41,7 +41,7 @@ spec:
     - use
     - $(params.source-artifact)=source
   - name: run-script-if-present
-    image: $(params.script-environment-image)
+    image: registry.access.redhat.com/ubi9/ubi-minimal:latest
     workingDir: $(workspaces.workdir.path)/source
     script: |
       #!/usr/bin/env bash
