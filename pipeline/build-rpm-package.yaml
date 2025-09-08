@@ -125,13 +125,6 @@ spec:
         echo "No pre-build script provided. Skipping."
         # This script must output the artifact path to the result file.
         echo -n "$(params.source-artifact)" | tee $(results.manipulated-source-artifact.path)
-    - name: post-build-script-content
-      description: The shell script to execute after all RPMs have been built.
-      type: string
-      default: |
-        #!/usr/bin/env bash
-        set -euxo pipefail
-        echo "No post-build script provided. Skipping."
     - name: test-suffix
       description: |
         Testing-only.  In some places we don't want to mix-up "real" component builds
@@ -224,6 +217,9 @@ spec:
     - name: pre-build-script
       runAfter:
       - clone-repository
+      workspaces:
+        - name: dockerconfig
+          workspace: registry-auth
       params:
       - name: script-environment-image
         value: $(params.script-environment-image)
@@ -234,6 +230,11 @@ spec:
       - name: ociStorage
         value: $(params.ociStorage)
       taskSpec:
+        workspaces:
+        - name: dockerconfig
+          description: The workspace containing the docker config.json secret.
+          mountPath: /tekton/home/.docker
+          optional: true
         params:
         - name: script-environment-image
         - name: source-artifact
@@ -533,37 +534,6 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/rpmbuild.yaml
-    - name: post-build-script
-      runAfter:
-      - rpmbuild-s390x
-      - rpmbuild-x86-64
-      - rpmbuild-aarch64
-      - rpmbuild-ppc64le
-      params:
-      - name: script-environment-image
-        value: $(params.script-environment-image)
-      - name: x86_64-artifact
-        value: $(tasks.rpmbuild-x86-64.results.rpmbuild-artifact)
-      - name: aarch64-artifact
-        value: $(tasks.rpmbuild-aarch64.results.rpmbuild-artifact)
-      - name: s390x-artifact
-        value: $(tasks.rpmbuild-s390x.results.rpmbuild-artifact)
-      - name: ppc64le-artifact
-        value: $(tasks.rpmbuild-ppc64le.results.rpmbuild-artifact)
-      - name: script-content
-        value: $(params.post-build-script-content)
-      taskSpec:
-        params:
-        - name: script-environment-image
-        - name: x86_64-artifact
-        - name: aarch64-artifact
-        - name: s390x-artifact
-        - name: ppc64le-artifact
-        - name: script-content
-        steps:
-        - name: run-post-build-script
-          image: $(params.script-environment-image)
-          script: $(params.script-content)
     - name: upload-to-quay
       params:
         - name: ociStorage
@@ -630,4 +600,6 @@ spec:
             value: task/check-noarch.yaml
   workspaces:
     - name: git-auth
+      optional: true
+    - name: dockerconfig
       optional: true
