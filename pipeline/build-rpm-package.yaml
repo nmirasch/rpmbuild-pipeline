@@ -601,5 +601,5 @@ spec:
   workspaces:
     - name: git-auth
       optional: true
-    - name: dockerconfig
+    - name: registry-auth
       optional: true
