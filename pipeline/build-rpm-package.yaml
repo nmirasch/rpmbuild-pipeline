@@ -115,7 +115,9 @@ spec:
     # The calculate-deps timeouts are not parametrized at all here, we expect
     # that these steps finish quickly enough for all packages (within the
     # default Tekton Task timeout).
-  
+    - name: pre-build-script-image
+      type: string
+      default: ""
     - name: pre-build-script-content
       description: The shell script to execute before the RPM sources are processed.
       type: string
@@ -215,43 +217,33 @@ spec:
         - name: basic-auth
           workspace: git-auth
     - name: pre-build-script
-      runAfter:
-      - clone-repository
-      workspaces:
-      - name: dockerconfig
-        workspace: registry-auth
+      when:
+        - input: $(params.pre-build-script-content)
+          operator: notin
+          values: [""]
       params:
-      - name: script-environment-image
-        value: $(params.script-environment-image)
       - name: source-artifact
-        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      - name: script-content
-        value: $(params.pre-build-script-content)
+        value: $(params.source-artifact)
       - name: ociStorage
         value: $(params.ociStorage)
-      taskSpec:
-        workspaces:
-        - name: dockerconfig
-          description: The workspace containing the docker config.json secret.
-          mountPath: /tekton/home/.docker
-          optional: true
-        params:
-        - name: script-environment-image
-        - name: source-artifact
-        - name: script-content
-        - name: ociStorage
-        results:
-        - name: manipulated-source-artifact
-          description: The source artifact after manipulations.
-        steps:
-        - name: run-pre-build-script
-          image: $(params.script-environment-image)
-          env:
-          - name: SOURCE_ARTIFACT_URL
-            value: $(params.source-artifact)
-          - name: OCI_STORAGE_URL
-            value: $(params.ociStorage)
-          script: $(params.script-content)
+      - name: ociArtifactExpiresAfter
+        value: $(params.ociArtifactExpiresAfter)
+      - name: script-environment-image
+        value: $(params.pre-build-script-image)
+      - name: script-content
+        value: $(params.pre-build-script-content)
+      taskRef:
+          resolver: git
+          params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/pre-build-script.yaml
+      workspaces:
+       - name: workdir
+         workspace: workdir
     - name: get-rpm-sources
       retries: 3
       taskRef:
@@ -265,39 +257,42 @@ spec:
             value: task/get-rpm-sources.yaml
           - name: ociArtifactExpiresAfter
             value: 14d
+          - name: source-artifact
+            value: >-
+                $(tasks.pre-build-script.results.manipulated-source-artifact)
       runAfter:
-        - pre-build-script
+      - pre-build-script
       params:
-        - name: package-name
-          value: $(params.package-name)
-        - name: source-artifact
-          value: $(tasks.pre-build-script.results.manipulated-source-artifact)
-        - name: ociStorage
-          value: $(params.ociStorage).rpm-sources
-        - name: ociArtifactExpiresAfter
-          value: 14d
-        - name: script-environment-image
-          value: $(params.script-environment-image)
-        - name: hermetic
-          value: $(params.hermetic)
-        - name: build-architectures
-          value: ["$(params.build-architectures[*])"]
+      - name: package-name
+        value: $(params.package-name)
+      - name: source-artifact
+        value: $(tasks.pre-build-script.results.manipulated-source-artifact)
+      - name: ociStorage
+        value: $(params.ociStorage).rpm-sources
+      - name: ociArtifactExpiresAfter
+        value: 14d
+      - name: script-environment-image
+        value: $(params.script-environment-image)
+      - name: hermetic
+        value: $(params.hermetic)
+      - name: build-architectures
+        value: [ "$(params.build-architectures[*])" ]
     - name: calculate-deps-x86-64
       runAfter:
-        - get-rpm-sources
+      - get-rpm-sources
       params:
-        - name: package-name
-          value: $(params.package-name)
-        - name: target-branch
-          value: $(params.target-branch)
-        - name: koji-target
-          value: $(params.koji-target)
-        - name: PLATFORM
-          value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
-        - name: script-environment-image
-          value: $(params.script-environment-image)
-        - name: dependencies-artifact
-          value: $(tasks.get-rpm-sources.results.dependencies-artifact)
+      - name: package-name
+        value: $(params.package-name)
+      - name: target-branch
+        value: $(params.target-branch)
+      - name: koji-target
+        value: $(params.koji-target)
+      - name: PLATFORM
+        value: $(tasks.get-rpm-sources.results.skip-mpc-tasks.deps-x86_64)
+      - name: script-environment-image
+        value: $(params.script-environment-image)
+      - name: dependencies-artifact
+        value: $(tasks.get-rpm-sources.results.dependencies-artifact)
         - name: ociStorage
           value: $(params.ociStorage).calculation-x86_64
         - name: ociArtifactExpiresAfter
