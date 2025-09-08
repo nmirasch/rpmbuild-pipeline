@@ -244,39 +244,72 @@ spec:
       workspaces:
        - name: workdir
          workspace: workdir
-    - name: get-rpm-sources
-      retries: 3
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: $(params.self-ref-url)
-          - name: revision
-            value: $(params.self-ref-revision)
-          - name: pathInRepo
-            value: task/get-rpm-sources.yaml
-          - name: ociArtifactExpiresAfter
-            value: 14d
-          - name: source-artifact
-            value: >-
-                $(tasks.pre-build-script.results.manipulated-source-artifact)
-      runAfter:
-      - pre-build-script
+    - name: get-rpm-sources-from-git
+      when:
+      - input: $(params.pre-build-script-content)
+        operator: in
+        values: [ "" ]
       params:
+      - name: source-artifact
+        value: $(params.source-artifact)
       - name: package-name
         value: $(params.package-name)
-      - name: source-artifact
-        value: $(tasks.pre-build-script.results.manipulated-source-artifact)
       - name: ociStorage
-        value: $(params.ociStorage).rpm-sources
+        value: $(params.ociStorage)
       - name: ociArtifactExpiresAfter
-        value: 14d
+        value: $(params.ociArtifactExpiresAfter)
       - name: script-environment-image
         value: $(params.script-environment-image)
       - name: hermetic
         value: $(params.hermetic)
       - name: build-architectures
-        value: [ "$(params.build-architectures[*])" ]
+        value: $(params.build-architectures)
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: $(params.self-ref-url)
+        - name: revision
+          value: $(params.self-ref-revision)
+        - name: pathInRepo
+          value: task/get-rpm-sources.yaml
+      workspaces:
+      - name: workdir
+        workspace: workdir
+    - name: get-rpm-sources-from-script
+      runAfter:
+      - pre-build-script
+      when:
+      - input: $(params.pre-build-script-content)
+        operator: notin
+        values: [ "" ]
+      params:
+      - name: source-artifact
+        value: $(tasks.pre-build-script.results.manipulated-source-artifact)
+      - name: package-name
+        value: $(params.package-name)
+      - name: ociStorage
+        value: $(params.ociStorage)
+      - name: ociArtifactExpiresAfter
+        value: $(params.ociArtifactExpiresAfter)
+      - name: script-environment-image
+        value: $(params.script-environment-image)
+      - name: hermetic
+        value: $(params.hermetic)
+      - name: build-architectures
+        value: $(params.build-architectures)
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: $(params.self-ref-url)
+        - name: revision
+          value: $(params.self-ref-revision)
+        - name: pathInRepo
+          value: task/get-rpm-sources.yaml
+      workspaces:
+      - name: workdir
+        workspace: workdir
     - name: calculate-deps-x86-64
       runAfter:
       - get-rpm-sources
