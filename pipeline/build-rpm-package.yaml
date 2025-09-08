@@ -234,7 +234,7 @@ spec:
         - name: ociStorage
           value: $(params.ociStorage)
         - name: ociArtifactExpiresAfter
-          value: $(params.ociArtifactExpiresAfter)
+          value: 14d
         - name: script-environment-image
           value: $(params.pre-build-script-image)
         - name: script-content
@@ -253,7 +253,7 @@ spec:
         - name: ociStorage
           value: $(params.ociStorage)
         - name: ociArtifactExpiresAfter
-          value: $(params.ociArtifactExpiresAfter)
+          value: 14d
         - name: script-environment-image
           value: $(params.script-environment-image)
         - name: hermetic
