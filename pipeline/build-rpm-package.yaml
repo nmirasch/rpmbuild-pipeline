@@ -218,8 +218,8 @@ spec:
       runAfter:
       - clone-repository
       workspaces:
-        - name: dockerconfig
-          workspace: registry-auth
+      - name: dockerconfig
+        workspace: registry-auth
       params:
       - name: script-environment-image
         value: $(params.script-environment-image)
