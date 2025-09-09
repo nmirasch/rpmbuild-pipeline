@@ -32,7 +32,7 @@ spec:
     - mountPath: /var/workdir
       name: workdir
   results:
-    - name: SOURCE_ARTIFACT
+    - name: OUTPUT_SOURCE_ARTIFACT
       description: The Trusted Artifact URI pointing to the artifact with the (possibly modified) source code.
       type: string
   steps:
@@ -55,7 +55,7 @@ spec:
     - create
     - --store
     - $(params.ociStorage)
-    - $(results.SOURCE_ARTIFACT}=/var/workdir/source
+    - $(results.OUTPUT_SOURCE_ARTIFACT}=/var/workdir/source
     env:
     - name: IMAGE_EXPIRES_AFTER
       value: $(params.ociArtifactExpiresAfter)

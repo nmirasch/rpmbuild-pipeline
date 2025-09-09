@@ -125,7 +125,7 @@ spec:
         set -euxo pipefail
         echo "No pre-build script provided. Skipping."
         # This script must output the artifact path to the result file.
-        echo -n "$(params.source-artifact)" | tee $(results.manipulated-source-artifact.path)
+        echo -n "$(params.source-artifact)" | tee $(results.OUTPUT_SOURCE_ARTIFACT)
     - name: test-suffix
       description: |
         Testing-only.  In some places we don't want to mix-up "real" component builds
@@ -243,7 +243,7 @@ spec:
         - pre-build-script
       params:
         - name: source-artifact
-          value: $(tasks.pre-build-script.results.SOURCE_ARTIFACT)
+          value: $(tasks.pre-build-script.results.OUTPUT_SOURCE_ARTIFACT)
         - name: package-name
           value: $(params.package-name)
         - name: ociStorage
