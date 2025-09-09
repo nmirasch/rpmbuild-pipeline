@@ -43,6 +43,7 @@ spec:
     - $(params.source-artifact)=/var/workdir/source
   - name: run-pre-build-script
     image: $(params.pre-build-script-image)
+    workingDir: /var/workdir/source
     script: |
       set -x
       echo "$(params.pre-build-script-content)" > /var/workdir/pre-build-script.sh
