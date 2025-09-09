@@ -238,9 +238,6 @@ spec:
           value: $(params.pre-build-script-image)
         - name: pre-build-script-content
           value: $(params.pre-build-script-content)
-      workspaces:
-        - name: workdir
-          workspace: workdir
     - name: get-rpm-sources
       runAfter:
         - pre-build-script
@@ -268,9 +265,6 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/get-rpm-sources.yaml
-      workspaces:
-        - name: workdir
-          workspace: workdir
     - name: calculate-deps-x86-64
       runAfter:
         - get-rpm-sources
@@ -590,4 +584,3 @@ spec:
   workspaces:
     - name: git-auth
       optional: true
-    - name: workdir
