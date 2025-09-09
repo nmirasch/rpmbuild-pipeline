@@ -215,51 +215,35 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
-        - name: output
-          workspace: sources
     - name: pre-build-script
       runAfter:
-      - clone-repository
-      params:
-      - name: source-artifact
-        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      - name: ociStorage
-        value: $(params.ociStorage)
-      - name: ociArtifactExpiresAfter
-        value: 14d
-      - name: pre-build-script-image
-        value: $(params.pre-build-script-image)
-      - name: pre-build-script-content
-        value: $(params.pre-build-script-content)
-      workspaces:
-      - name: sources
-        workspace: sources
-      taskSpec:
+        - clone-repository
+      taskRef:
+        resolver: git
         params:
+          - name: url
+            value: $(params.self-ref-url)
+          - name: revision
+            value: $(params.self-ref-revision)
+          - name: pathInRepo
+            value: task/pre-build-script.yaml
+      params:
         - name: source-artifact
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
         - name: ociStorage
+          value: $(params.ociStorage)
         - name: ociArtifactExpiresAfter
+          value: 14d
         - name: pre-build-script-image
+          value: $(params.pre-build-script-image)
         - name: pre-build-script-content
-        workspaces:
-        - name: sources
-        results:
-        - name: manipulated-source-artifact
-          description: Path to the manipulated source artifact
-        steps:
-        - name: run-script
-          image: $(params.pre-build-script-image)
-          script: |
-            #!/bin/bash
-            set -e
-            cd $(workspaces.source.path)
-            $(params.pre-build-script-content)
+          value: $(params.pre-build-script-content)
     - name: get-rpm-sources
       runAfter:
         - pre-build-script
       params:
         - name: source-artifact
-          value: $(tasks.pre-build-script.results.manipulated-source-artifact)
+          value: $(tasks.pre-build-script.results.SOURCE_ARTIFACT)
         - name: package-name
           value: $(params.package-name)
         - name: ociStorage
@@ -281,9 +265,6 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/get-rpm-sources.yaml
-      workspaces:
-        - name: sources
-          workspace: sources
     - name: calculate-deps-x86-64
       runAfter:
         - get-rpm-sources
@@ -603,4 +584,3 @@ spec:
   workspaces:
     - name: git-auth
       optional: true
-    - name: sources

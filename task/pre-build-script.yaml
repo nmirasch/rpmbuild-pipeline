@@ -27,10 +27,6 @@ spec:
       type: string
       description: Optional bash script to execute on the source files.
       default: ""
-  results:
-    - name: manipulated-source-artifact
-      description: The Trusted Artifact URI pointing to the source for the next step.
-      type: string
   stepTemplate:
     volumeMounts:
     - mountPath: /var/workdir
@@ -41,16 +37,28 @@ spec:
     args:
     - use
     - $(params.source-artifact)=/var/workdir/source
+  - name: run-pre-build-script
+    image: $(params.pre-build-script-image)
+    script: |
+      set -x
+      cd "/var/workdir/source"
+        if [ -n "$(params.pre-build-script-content)" ]; then
+            echo "+++ Running pre-build script +++"
+            echo "$(params.pre-build-script-content)" > /var/workdir/pre-build-script.sh
+            # chmod +x /var/workdir/pre-build-script.sh
+            #  /var/workdir/pre-build-script.sh
+        else
+            echo "+++ No pre-build script provided, skipping +++"
+        fi
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-    env:
-    - name: IMAGE_EXPIRES_AFTER
-      value: $(params.ociArtifactExpiresAfter)
     args:
     - create
     - --store
     - $(params.ociStorage)
-    - $(results.manipulated-source-artifact)=/var/workdir/source
+    env:
+    - name: IMAGE_EXPIRES_AFTER
+      value: $(params.ociArtifactExpiresAfter)
   volumes:
   - name: workdir
     emptyDir: {}
