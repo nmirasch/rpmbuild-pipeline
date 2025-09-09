@@ -215,7 +215,7 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
-        - name: sources
+        - name: output
           workspace: sources
     - name: pre-build-script
       runAfter:
