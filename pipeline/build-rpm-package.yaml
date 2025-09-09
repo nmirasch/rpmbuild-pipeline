@@ -219,30 +219,38 @@ spec:
           workspace: shared-sources
     - name: pre-build-script
       runAfter:
-        - clone-repository
+      - clone-repository
       params:
-        - name: source-artifact
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-        - name: ociStorage
-          value: $(params.ociStorage)
-        - name: ociArtifactExpiresAfter
-          value: 14d
-        - name: pre-build-script-image
-          value: $(params.pre-build-script-image)
-        - name: pre-build-script-content
-          value: $(params.pre-build-script-content)
+      - name: source-artifact
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      - name: ociStorage
+        value: $(params.ociStorage)
+      - name: ociArtifactExpiresAfter
+        value: 14d
+      - name: pre-build-script-image
+        value: $(params.pre-build-script-image)
+      - name: pre-build-script-content
+        value: $(params.pre-build-script-content)
       workspaces:
+      - name: source
+        workspace: shared-sources
+      taskSpec:
+        params:
+        - name: source-artifact
+        - name: ociStorage
+        - name: ociArtifactExpiresAfter
+        - name: pre-build-script-image
+        - name: pre-build-script-content
+        workspaces:
         - name: source
-          workspace: shared-sources
-      steps:
-      - name: run-script
-        image: registry.access.redhat.com/ubi8/ubi
-        script: |
-          #!/bin/bash
-          set -e
-          cd $(workspaces.source.path)
-          $(params.script-content)
-          # Optionally, copy or move manipulated sources if needed
+        steps:
+        - name: run-script
+          image: $(params.pre-build-script-image)
+          script: |
+            #!/bin/bash
+            set -e
+            cd $(workspaces.source.path)
+            $(params.pre-build-script-content)
     - name: get-rpm-sources
       runAfter:
         - pre-build-script
