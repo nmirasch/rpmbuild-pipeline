@@ -31,6 +31,10 @@ spec:
     volumeMounts:
     - mountPath: /var/workdir
       name: workdir
+  results:
+    - name: source-artifact
+      description: The Trusted Artifact URI pointing to the artifact with the (possibly modified) source code.
+      type: string
   steps:
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
