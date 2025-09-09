@@ -215,18 +215,11 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
+        - name: output
+          workspace: shared-sources
     - name: pre-build-script
       runAfter:
         - clone-repository
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: $(params.self-ref-url)
-          - name: revision
-            value: $(params.self-ref-revision)
-          - name: pathInRepo
-            value: task/pre-build-script.yaml
       params:
         - name: source-artifact
           value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
@@ -238,6 +231,18 @@ spec:
           value: $(params.pre-build-script-image)
         - name: pre-build-script-content
           value: $(params.pre-build-script-content)
+      workspaces:
+        - name: source
+          workspace: shared-sources
+      steps:
+      - name: run-script
+        image: registry.access.redhat.com/ubi8/ubi
+        script: |
+          #!/bin/bash
+          set -e
+          cd $(workspaces.source.path)
+          $(params.script-content)
+          # Optionally, copy or move manipulated sources if needed
     - name: get-rpm-sources
       runAfter:
         - pre-build-script
@@ -265,6 +270,9 @@ spec:
             value: $(params.self-ref-revision)
           - name: pathInRepo
             value: task/get-rpm-sources.yaml
+      workspaces:
+        - name: source
+          workspace: shared-sources
     - name: calculate-deps-x86-64
       runAfter:
         - get-rpm-sources
