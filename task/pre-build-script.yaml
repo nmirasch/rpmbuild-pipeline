@@ -49,7 +49,7 @@ spec:
     script: |
       #!/bin/sh
       set -e
-      ARTIFACT_URI=$(build-trusted-artifacts create --store "$(params.ociStorage)" /var/workdir/source)
+      ARTIFACT_URI=$(/build-trusted-artifacts create --store "$(params.ociStorage)" /var/workdir/source)
       echo -n "$ARTIFACT_URI" > $(results.manipulated-source-artifact.path)
   volumes:
   - name: workdir
