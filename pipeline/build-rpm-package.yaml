@@ -216,7 +216,7 @@ spec:
         - name: basic-auth
           workspace: git-auth
         - name: sources
-          workspace: shared-sources
+          workspace: sources
     - name: pre-build-script
       runAfter:
       - clone-repository
@@ -233,7 +233,7 @@ spec:
         value: $(params.pre-build-script-content)
       workspaces:
       - name: sources
-        workspace: shared-sources
+        workspace: sources
       taskSpec:
         params:
         - name: source-artifact
@@ -283,7 +283,7 @@ spec:
             value: task/get-rpm-sources.yaml
       workspaces:
         - name: sources
-          workspace: shared-sources
+          workspace: sources
     - name: calculate-deps-x86-64
       runAfter:
         - get-rpm-sources
