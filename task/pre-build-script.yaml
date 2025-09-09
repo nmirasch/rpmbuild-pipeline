@@ -43,14 +43,14 @@ spec:
     - $(params.source-artifact)=/var/workdir/source
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-    args:
-    - create
-    - --store
-    - $(params.ociStorage)
-    - $(results.manipulated-source-artifact)=/var/workdir/source
     env:
     - name: IMAGE_EXPIRES_AFTER
       value: $(params.ociArtifactExpiresAfter)
+    script: |
+      #!/bin/sh
+      set -e
+      ARTIFACT_URI=$(build-trusted-artifacts create --store "$(params.ociStorage)" /var/workdir/source)
+      echo -n "$ARTIFACT_URI" > $(results.manipulated-source-artifact.path)
   volumes:
   - name: workdir
     emptyDir: {}
