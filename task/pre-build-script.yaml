@@ -55,7 +55,7 @@ spec:
     - create
     - --store
     - $(params.ociStorage)
-    - $(results.OUTPUT_SOURCE_ARTIFACT}=/var/workdir/source
+    - $(results.OUTPUT_SOURCE_ARTIFACT.path}=/var/workdir/source
     env:
     - name: IMAGE_EXPIRES_AFTER
       value: $(params.ociArtifactExpiresAfter)
