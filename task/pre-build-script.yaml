@@ -46,12 +46,11 @@ spec:
     env:
     - name: IMAGE_EXPIRES_AFTER
       value: $(params.ociArtifactExpiresAfter)
-    script: |
-      #!/bin/sh
-      set -e
-      find / -name build-trusted-artifacts || true
-      ARTIFACT_URI=$(build-trusted-artifacts create --store "$(params.ociStorage)" /var/workdir/source)
-      echo -n "$ARTIFACT_URI" > $(results.manipulated-source-artifact.path)
+    args:
+    - create
+    - --store
+    - $(params.ociStorage)
+    - $(results.manipulated-source-artifact)=/var/workdir/source
   volumes:
   - name: workdir
     emptyDir: {}
