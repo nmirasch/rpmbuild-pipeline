@@ -600,3 +600,4 @@ spec:
   workspaces:
     - name: git-auth
       optional: true
+    - name: shared-sources
