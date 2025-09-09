@@ -125,7 +125,7 @@ spec:
         set -euxo pipefail
         echo "No pre-build script provided. Skipping."
         # This script must output the artifact path to the result file.
-        echo -n "$(params.source-artifact)" | tee $(results.OUTPUT_SOURCE_ARTIFACT)
+        echo -n "$(params.source-artifact)" | tee $(results.OUTPUT_SOURCE_ARTIFACT.path)
     - name: test-suffix
       description: |
         Testing-only.  In some places we don't want to mix-up "real" component builds
