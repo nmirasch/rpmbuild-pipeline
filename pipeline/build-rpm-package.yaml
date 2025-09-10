@@ -132,6 +132,13 @@ spec:
         with "testing" component builds.  If we are testing, set this to some value.
       type: string
       default: ""
+    - name: enableSymlinkCheck
+      description: |
+        Whether to enable symlink checks when cloning the git repository.
+        Disabling this check is insecure and should only be done in trusted
+        environments.
+      type: string
+      default: true
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -201,6 +208,8 @@ spec:
           value: $(params.ociStorage).git
         - name: ociArtifactExpiresAfter
           value: 14d
+        - name: enableSymlinkCheck
+          value: $(params.enableSymlinkCheck}
       runAfter:
         - init
       taskRef:
