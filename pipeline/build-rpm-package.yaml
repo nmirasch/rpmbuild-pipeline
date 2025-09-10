@@ -161,6 +161,13 @@ spec:
       default: 'fedora-rawhide'
       description: Target distribution. The pipeline expands spec file using macros from the target distribution. Typically specified as ID-VERSION_ID (see /etc/os-release), e.g., rhel-11
       type: string
+    - name: enableSymlinkCheck
+      description: |
+        Whether to enable symlink checks when cloning the git repository.
+        Disabling this check is insecure and should only be done in trusted
+        environments.
+      type: string
+      default: true
   results:
     - description: ""
       name: CHAINS-GIT_URL
@@ -232,6 +239,8 @@ spec:
           value: $(params.ociStorage).git
         - name: ociArtifactExpiresAfter
           value: $(params.ociArtifactExpiresAfter)
+        - name: enableSymlinkCheck
+          value: $(params.enableSymlinkCheck}
       runAfter:
       - init
       taskRef:
