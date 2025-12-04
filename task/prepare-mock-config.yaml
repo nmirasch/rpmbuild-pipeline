@@ -12,7 +12,6 @@ spec:
     But some use-cases might want to generate the configuration by Koji (when
     building against the Koji buildroot), or even host the Mock configuration
     within the provided git source repository (Hummingbird's monorepo).
-    There are various situation we need to
   params:
     - description: RPM Build environment OCI image to run scripts in
       name: script-environment-image
